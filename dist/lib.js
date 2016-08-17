@@ -2,6 +2,7 @@
 "use strict";
 const tls = require('tls');
 const net = require('net');
+const fs = require('fs');
 const factory_1 = require('./transferHandlers/factory');
 const ftpLineEnd = '\r\n';
 const ftpSeparator = ' ';
@@ -151,15 +152,28 @@ class FTP {
             });
         });
     }
-    get(path) {
-        return this.send('EPSV').then((pasvResponse) => {
-            const command = `RETR${ftpSeparator}${path}`;
-            const promises = [];
-            const sendPromise = this.send(command);
-            promises.push(sendPromise);
-            promises.push(Promise.resolve(this.handler.getSocket(pasvResponse)));
-            return Promise.all(promises).then((values) => {
-                return values[1];
+    get(remote, local) {
+        return new Promise((resolve, reject) => {
+            this.send('EPSV').then((pasvResponse) => {
+                const command = `RETR${ftpSeparator}${remote}`;
+                const sendPromise = this.send(command).then(() => {
+                    this.pendingCallbacks.push((error, value) => {
+                        if (debug)
+                            console.log('[CONTROL]', value);
+                        if (error)
+                            reject(error);
+                        resolve();
+                    });
+                });
+                const socket = this.handler.getSocket(pasvResponse);
+                const writeStream = fs.createWriteStream(local);
+                socket.on('error', reject);
+                socket.on('end', () => {
+                    if (debug)
+                        console.log('[INFO] File transfer finished');
+                    writeStream.close();
+                });
+                return sendPromise;
             });
         });
     }
@@ -173,6 +187,9 @@ class FTP {
                 throw new Error(rntoResponse);
             return rntoResponse;
         });
+    }
+    quit() {
+        return this.send('quit');
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });

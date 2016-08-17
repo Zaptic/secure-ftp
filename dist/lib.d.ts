@@ -16,6 +16,7 @@ export default class FTP {
     send(command: string): Promise<string>;
     send(command: string, socket: Duplex): Promise<string>;
     nlist(path?: string): Promise<any>;
-    get(path: string): Promise<any>;
+    get(remote: string, local: string): Promise<{}>;
     rename(from: string, to: string): Promise<string>;
+    quit(): Promise<string>;
 }
