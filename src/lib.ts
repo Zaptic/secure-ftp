@@ -191,9 +191,10 @@ export default class FTP {
 
                 socket.on('error', reject);
                 socket.on('end', () => {
-                    if (debug) console.log('[INFO] File transfer finished');
                     writeStream.close();
                 });
+
+                socket.pipe(writeStream);
 
                 return sendPromise;
             })
