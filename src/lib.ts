@@ -2,6 +2,7 @@
 
 import * as tls from 'tls';
 import * as net from 'net';
+import * as fs from 'fs';
 import {Callback, FTPOptions as Options, TLSOptions} from './interfaces';
 import {TlsOptions} from 'tls';
 import {Duplex} from 'stream';
@@ -171,19 +172,34 @@ export default class FTP {
         })
     }
 
-    get(path: string) {
-        return this.send('EPSV').then((pasvResponse) => {
-            const command = `RETR${ftpSeparator}${path}`;
-            const promises: Promise<any>[] = [];
+    get(remote: string, local: string) {
 
-            const sendPromise = this.send(command);
-            promises.push(sendPromise);
-            promises.push(Promise.resolve(this.handler.getSocket(pasvResponse)));
+        return new Promise((resolve, reject) => {
+            this.send('EPSV').then((pasvResponse) => {
+                const command = `RETR${ftpSeparator}${remote}`;
 
-            return Promise.all(promises).then((values) => {
-                return values[1];
+                const sendPromise = this.send(command).then(() => {
+                    this.pendingCallbacks.push((error, value) => {
+                        if (debug) console.log('[CONTROL]', value);
+                        if (error) reject(error);
+                        resolve();
+                    })
+                });
+
+                const socket = this.handler.getSocket(pasvResponse);
+                const writeStream = fs.createWriteStream(local);
+
+                socket.on('error', reject);
+                socket.on('end', () => {
+                    if (debug) console.log('[INFO] File transfer finished');
+                    writeStream.close();
+                });
+
+                return sendPromise;
             })
-        })
+        });
+
+
     }
 
     rename(from: string, to: string) {
@@ -194,5 +210,9 @@ export default class FTP {
             if (rntoResponse.startsWith('5')) throw new Error(rntoResponse);
             return rntoResponse;
         })
+    }
+
+    quit() {
+        return this.send('quit');
     }
 }
