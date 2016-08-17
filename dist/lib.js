@@ -169,10 +169,9 @@ class FTP {
                 const writeStream = fs.createWriteStream(local);
                 socket.on('error', reject);
                 socket.on('end', () => {
-                    if (debug)
-                        console.log('[INFO] File transfer finished');
                     writeStream.close();
                 });
+                socket.pipe(writeStream);
                 return sendPromise;
             });
         });
