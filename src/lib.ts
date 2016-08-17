@@ -1,4 +1,4 @@
-'use strict';
+/// <reference path="../typings/globals/node/index.d.ts" />
 
 import * as tls from 'tls';
 import * as net from 'net';
