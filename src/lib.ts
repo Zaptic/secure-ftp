@@ -9,6 +9,7 @@ import {Duplex} from 'stream';
 
 import Handler from './transferHandlers/handler';
 import getHandler from './transferHandlers/factory';
+import {Stream} from 'stream';
 
 const ftpLineEnd = '\r\n';
 const ftpSeparator = ' ';
@@ -187,9 +188,9 @@ export default class FTP {
         });
     }
 
-    get(remote: string) {
+    get(remotePath: string) {
         return this.send(this.handler.message).then((handlerResponse) => {
-            const command = `RETR${ftpSeparator}${remote}`;
+            const command = `RETR${ftpSeparator}${remotePath}`;
 
             this.send(command).then((response) => {
                 if (response.startsWith('5')) return socket.emit('error', response);
@@ -209,11 +210,12 @@ export default class FTP {
         })
     }
 
-
-    download(remote: string, local: string) {
+    put(remotePath: string, stream: Stream) {
         return new Promise((resolve, reject) => {
+            stream.on('error', reject);
+
             this.send(this.handler.message).then((handlerResponse) => {
-                const command = `RETR${ftpSeparator}${remote}`;
+                const command = `STOR${ftpSeparator}${remotePath}`;
 
                 const sendPromise = this.send(command).then(() => {
                     this.pendingCallbacks.push((error, value) => {
@@ -224,17 +226,36 @@ export default class FTP {
                 });
 
                 const socket = this.handler.getSocket(handlerResponse);
-                const writeStream = fs.createWriteStream(local);
 
                 socket.on('error', reject);
-                socket.on('end', () => {
-                    writeStream.close();
-                });
-
-                socket.pipe(writeStream);
+                stream.pipe(socket);
 
                 return sendPromise;
             })
+        });
+    }
+
+    upload(localPath: string, remotePath: string) {
+        const readStream = fs.createReadStream(localPath);
+        return this.put(remotePath, readStream).then((data) => {
+            readStream.close();
+            return data;
+        });
+    }
+
+    download(remotePath: string, localPath: string) {
+        return new Promise((resolve, reject) => {
+            this.get(remotePath).then((socket) => {
+                const writeStream = fs.createWriteStream(localPath);
+
+                socket.on('error', reject);
+                socket.on('getEnd', (value: string) => {
+                    writeStream.close();
+                    resolve(value);
+                });
+
+                socket.pipe(writeStream);
+            });
         });
     }
 
