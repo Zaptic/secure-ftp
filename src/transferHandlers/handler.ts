@@ -12,6 +12,7 @@ abstract class Handler {
     private secure: boolean;
     protected options: FTPOptions;
     public socket: Duplex;
+    public message: string;
 
     constructor(secure: boolean, options: FTPOptions) {
         this.secure = secure;

@@ -157,7 +157,7 @@ export default class FTP {
         return new Promise((resolve, reject) => {
             let files: string[];
 
-            this.send('EPSV').then((pasvResponse) => {
+            this.send(this.handler.message).then((handlerResponse) => {
                 const command = path ? `NLST${ftpSeparator}${path}` : `NLST`;
                 const promises: PromiseLike<string[]>[] = [];
 
@@ -173,7 +173,7 @@ export default class FTP {
                     });
                     return [response];
                 });
-                const getDataPromise = this.handler.getData(pasvResponse).then((data) => {
+                const getDataPromise = this.handler.getData(handlerResponse).then((data) => {
                     return data.split(ftpLineEnd).filter((value) => value ? true : false);
                 });
 
@@ -188,7 +188,7 @@ export default class FTP {
     }
 
     get(remote: string) {
-        return this.send('EPSV').then((pasvResponse) => {
+        return this.send(this.handler.message).then((handlerResponse) => {
             const command = `RETR${ftpSeparator}${remote}`;
 
             this.send(command).then((response) => {
@@ -203,15 +203,16 @@ export default class FTP {
                 })
             });
 
-            const socket = this.handler.getSocket(pasvResponse);
+            const socket = this.handler.getSocket(handlerResponse);
 
             return socket;
         })
     }
 
+
     download(remote: string, local: string) {
         return new Promise((resolve, reject) => {
-            this.send('EPSV').then((pasvResponse) => {
+            this.send(this.handler.message).then((handlerResponse) => {
                 const command = `RETR${ftpSeparator}${remote}`;
 
                 const sendPromise = this.send(command).then(() => {
@@ -222,7 +223,7 @@ export default class FTP {
                     })
                 });
 
-                const socket = this.handler.getSocket(pasvResponse);
+                const socket = this.handler.getSocket(handlerResponse);
                 const writeStream = fs.createWriteStream(local);
 
                 socket.on('error', reject);

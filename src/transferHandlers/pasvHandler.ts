@@ -10,6 +10,7 @@ const pasvRegex = /([-\d]+,[-\d]+,[-\d]+,[-\d]+),([-\d]+),([-\d]+)/;
 export default class PASVHandler extends Handler {
     constructor(secure: boolean, options: FTPOptions) {
         super(secure,options)
+        this.message = 'PASV';
     }
 
     protected parse(message: string) {
