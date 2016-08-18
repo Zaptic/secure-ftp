@@ -83,6 +83,7 @@ class FTP {
     }
     createSecureSocket(socket, options) {
         return new Promise((resolve, reject) => {
+            // Control socket
             const tlsSocket = tls.connect({ socket: socket, rejectUnauthorized: options.tls.rejectUnauthorized });
             tlsSocket.setEncoding('utf8');
             tlsSocket.on('error', (error) => {
@@ -98,6 +99,8 @@ class FTP {
                 const callback = this.pendingCallbacks.pop();
                 if (callback)
                     callback(null, data);
+                else
+                    console.error('Uncaught data: ', data);
             });
             tlsSocket.on('secureConnect', () => {
                 this.send('PBSZ 0', tlsSocket).then((response) => {
@@ -137,25 +140,61 @@ class FTP {
         });
     }
     nlist(path) {
-        return this.send('EPSV').then((pasvResponse) => {
-            const command = path ? `NLST${ftpSeparator}${path}` : `NLST`;
-            const promises = [];
-            const sendPromise = this.send(command);
-            const getDataPromise = this.handler.getData(pasvResponse).then((data) => {
-                return data.split(ftpLineEnd).filter((value) => value ? true : false);
-            });
-            this.pendingCallbacks.push((e, d) => debug ? console.log('[CONTROL DROPPED]', d) : null); // Skip the incoming message
-            promises.push(sendPromise);
-            promises.push(getDataPromise);
-            return Promise.all(promises).then((values) => {
-                return values[1];
+        return new Promise((resolve, reject) => {
+            let files;
+            this.send(this.handler.message).then((handlerResponse) => {
+                const command = path ? `NLST${ftpSeparator}${path}` : `NLST`;
+                const promises = [];
+                const sendPromise = this.send(command).then((response) => {
+                    if (response.startsWith('5'))
+                        reject(response);
+                    this.pendingCallbacks.push((error, value) => {
+                        if (debug)
+                            console.log('[CONTROL]', value);
+                        if (error)
+                            return reject(error);
+                        if (value.startsWith('5'))
+                            reject(value);
+                        resolve(files);
+                    });
+                    return [response];
+                });
+                const getDataPromise = this.handler.getData(handlerResponse).then((data) => {
+                    return data.split(ftpLineEnd).filter((value) => value ? true : false);
+                });
+                promises.push(sendPromise);
+                promises.push(getDataPromise);
+                Promise.all(promises).then((values) => {
+                    files = values[1];
+                });
             });
         });
     }
-    get(remote, local) {
+    get(remotePath) {
+        return this.send(this.handler.message).then((handlerResponse) => {
+            const command = `RETR${ftpSeparator}${remotePath}`;
+            this.send(command).then((response) => {
+                if (response.startsWith('5'))
+                    return socket.emit('error', response);
+                this.pendingCallbacks.push((error, value) => {
+                    if (debug)
+                        console.log('[CONTROL]', value);
+                    if (error)
+                        return socket.emit('error', error);
+                    if (value.startsWith('5'))
+                        return socket.emit('error', value);
+                    socket.emit('getEnd', value);
+                });
+            });
+            const socket = this.handler.getSocket(handlerResponse);
+            return socket;
+        });
+    }
+    put(remotePath, stream) {
         return new Promise((resolve, reject) => {
-            this.send('EPSV').then((pasvResponse) => {
-                const command = `RETR${ftpSeparator}${remote}`;
+            stream.on('error', reject);
+            this.send(this.handler.message).then((handlerResponse) => {
+                const command = `STOR${ftpSeparator}${remotePath}`;
                 const sendPromise = this.send(command).then(() => {
                     this.pendingCallbacks.push((error, value) => {
                         if (debug)
@@ -165,14 +204,30 @@ class FTP {
                         resolve();
                     });
                 });
-                const socket = this.handler.getSocket(pasvResponse);
-                const writeStream = fs.createWriteStream(local);
+                const socket = this.handler.getSocket(handlerResponse);
                 socket.on('error', reject);
-                socket.on('end', () => {
+                stream.pipe(socket);
+                return sendPromise;
+            });
+        });
+    }
+    upload(localPath, remotePath) {
+        const readStream = fs.createReadStream(localPath);
+        return this.put(remotePath, readStream).then((data) => {
+            readStream.close();
+            return data;
+        });
+    }
+    download(remotePath, localPath) {
+        return new Promise((resolve, reject) => {
+            this.get(remotePath).then((socket) => {
+                const writeStream = fs.createWriteStream(localPath);
+                socket.on('error', reject);
+                socket.on('getEnd', (value) => {
                     writeStream.close();
+                    resolve(value);
                 });
                 socket.pipe(writeStream);
-                return sendPromise;
             });
         });
     }

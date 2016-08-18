@@ -6,6 +6,7 @@ const pasvRegex = /([-\d]+,[-\d]+,[-\d]+,[-\d]+),([-\d]+),([-\d]+)/;
 class PASVHandler extends handler_1.default {
     constructor(secure, options) {
         super(secure, options);
+        this.message = 'PASV';
     }
     parse(message) {
         // According to the spec https://www.ietf.org/rfc/rfc959.txt (p44)

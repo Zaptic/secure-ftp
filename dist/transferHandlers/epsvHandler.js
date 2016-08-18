@@ -4,6 +4,7 @@ const epsvRegex = /\|([-\d]+)\|/;
 class EPSVHandler extends handler_1.default {
     constructor(secure, options) {
         super(secure, options);
+        this.message = 'EPSV';
     }
     parse(message) {
         var parsedNumbers = epsvRegex.exec(message);

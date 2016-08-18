@@ -4,6 +4,7 @@ declare abstract class Handler {
     private secure;
     protected options: FTPOptions;
     socket: Duplex;
+    message: string;
     constructor(secure: boolean, options: FTPOptions);
     protected abstract parse(message: string): {
         host: string;
