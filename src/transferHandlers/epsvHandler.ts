@@ -8,6 +8,7 @@ const epsvRegex = /\|([-\d]+)\|/;
 export default class EPSVHandler extends Handler {
     constructor(secure: boolean, options: FTPOptions) {
         super(secure, options);
+        this.message = 'EPSV';
     }
 
     protected parse(message: string) {

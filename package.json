@@ -1,8 +1,8 @@
 {
   "name": "secure-ftp",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "A light FTP, FTPs library without external dependencies written in typescript.",
-  "main": "index.js",
+  "main": "./dist/lib",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/Juliand-Digital/secure-ftp/issues"
   },
-  "homepage": "https://github.com/Juliand-Digital/secure-ftp#readme"
+  "homepage": "https://github.com/Juliand-Digital/secure-ftp#readme",
+  "devDependencies": {
+    "typescript": "1.8.10"
+  }
 }

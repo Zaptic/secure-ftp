@@ -1,175 +1,160 @@
 /// <reference path="../typings/globals/node/index.d.ts" />
-
-import * as tls from 'tls';
-import * as net from 'net';
-import * as fs from 'fs';
-import {Callback, FTPOptions as Options, TLSOptions} from './interfaces';
-import {TlsOptions} from 'tls';
-import {Duplex} from 'stream';
-
-import Handler from './transferHandlers/handler';
-import getHandler from './transferHandlers/factory';
-import {Stream} from 'stream';
-
+"use strict";
+const tls = require('tls');
+const net = require('net');
+const fs = require('fs');
+const factory_1 = require('./transferHandlers/factory');
 const ftpLineEnd = '\r\n';
 const ftpSeparator = ' ';
 const env = process.env.NODE_ENV;
 const debug = env !== 'production';
-
-
-export default class FTP {
-    private options: Options;
-    private pendingCallbacks: Callback<any>[] = [];
-    socket: Duplex; // Duplex is the only common type between net.Socket and tls.ClearTextStream
-    connected: boolean;
-    handler: Handler;
-
-    constructor(options: Options) {
-        this.options = options
+class FTP {
+    constructor(options) {
+        this.pendingCallbacks = [];
+        this.options = options;
     }
-
     connect() {
         const connectionPromise = this.options.secure ? this.connectSecure() : this.connectUnSecure();
-        if (this.options.secure) console.log('Starting connection in secure mode');
-        else console.log('Starting connection in unsecure mode');
-        return connectionPromise.then((socket: Duplex) => {
+        if (this.options.secure)
+            console.log('Starting connection in secure mode');
+        else
+            console.log('Starting connection in unsecure mode');
+        return connectionPromise.then((socket) => {
             this.socket = socket;
             this.connected = true;
-            this.handler = getHandler(this.options.handler, this.options.secure, this.options);
+            this.handler = factory_1.default(this.options.handler, this.options.secure, this.options);
         });
     }
-
-    private connectUnSecure() {
+    connectUnSecure() {
         return new Promise((resolve, reject) => {
-            const socket = net.connect({host: this.options.host, port: this.options.port});
+            const socket = net.connect({ host: this.options.host, port: this.options.port });
             socket.setEncoding('utf8');
-
             let first = true;
-
-            socket.on('error', (error: Error) => {
+            socket.on('error', (error) => {
                 const callback = this.pendingCallbacks.pop();
-
-                if (callback) callback(error);
-                else console.error('Uncaught error: ', error, error.stack);
+                if (callback)
+                    callback(error);
+                else
+                    console.error('Uncaught error: ', error, error.stack);
             });
-
-            socket.on('data', (data: string) => {
-                if (debug) console.log('[CONTROL]', data);
-
+            socket.on('data', (data) => {
+                if (debug)
+                    console.log('[CONTROL]', data);
                 if (first) {
                     first = false;
-                    if (!data.startsWith('220')) reject(data);
-
+                    if (!data.startsWith('220'))
+                        reject(data);
                     this.send(`USER ${this.options.user}`, socket).then((response) => {
-                        if (response.startsWith('5')) throw new Error(response);
+                        if (response.startsWith('5'))
+                            throw new Error(response);
                         return this.send(`PASS ${this.options.password}`, socket);
                     }).then((response) => {
-                        if (response.startsWith('5')) throw new Error(response);
+                        if (response.startsWith('5'))
+                            throw new Error(response);
                         resolve(socket);
                     }).catch(reject);
-                } else {
+                }
+                else {
                     const callback = this.pendingCallbacks.pop();
-                    if (callback) callback(null, data);
+                    if (callback)
+                        callback(null, data);
                 }
             });
         });
     }
-
-    private connectSecure() {
+    connectSecure() {
         return new Promise((resolve, reject) => {
-            const socket = net.connect({host: this.options.host, port: this.options.port});
+            const socket = net.connect({ host: this.options.host, port: this.options.port });
             socket.setEncoding('utf8');
-
-            socket.on('data', (data: String) => {
-                if (debug) console.log('[CONTROL]', data);
-
+            socket.on('data', (data) => {
+                if (debug)
+                    console.log('[CONTROL]', data);
                 if (data.startsWith('220')) {
                     socket.write('AUTH TLS' + ftpLineEnd);
-                } else if (data.startsWith('234')) {
+                }
+                else if (data.startsWith('234')) {
                     this.createSecureSocket(socket, this.options).then(resolve, reject);
-                } else reject(data);
-
+                }
+                else
+                    reject(data);
             });
-
             socket.on('error', reject);
         });
     }
-
-    private createSecureSocket(socket: Duplex, options: Options) {
-        return new Promise((resolve, reject)=> {
+    createSecureSocket(socket, options) {
+        return new Promise((resolve, reject) => {
             // Control socket
-            const tlsSocket = tls.connect(<TlsOptions>{socket, rejectUnauthorized: options.tls.rejectUnauthorized});
+            const tlsSocket = tls.connect({ socket: socket, rejectUnauthorized: options.tls.rejectUnauthorized });
             tlsSocket.setEncoding('utf8');
-
-            tlsSocket.on('error', (error: Error) => {
+            tlsSocket.on('error', (error) => {
                 const callback = this.pendingCallbacks.pop();
-
-                if (callback) callback(error);
-                else console.error('Uncaught error: ', error, error.stack);
+                if (callback)
+                    callback(error);
+                else
+                    console.error('Uncaught error: ', error, error.stack);
             });
-
-            tlsSocket.on('data', (data: string) => {
-                if (!data) return console.log('Empty Data Recieved');
+            tlsSocket.on('data', (data) => {
+                if (!data)
+                    return console.log('Empty Data Recieved');
                 const callback = this.pendingCallbacks.pop();
-                if (callback) callback(null, data);
-                else console.error('Uncaught data: ', data);
+                if (callback)
+                    callback(null, data);
+                else
+                    console.error('Uncaught data: ', data);
             });
-
             tlsSocket.on('secureConnect', () => {
                 this.send('PBSZ 0', tlsSocket).then((response) => {
-                    if (response.startsWith('5')) throw new Error(response);
+                    if (response.startsWith('5'))
+                        throw new Error(response);
                     return this.send(`USER ${options.user}`, tlsSocket);
                 }).then((response) => {
-                    if (response.startsWith('5')) throw new Error(response);
+                    if (response.startsWith('5'))
+                        throw new Error(response);
                     return this.send(`PASS ${options.password}`, tlsSocket);
                 }).then((response) => {
-                    if (response.startsWith('5')) throw new Error(response);
+                    if (response.startsWith('5'))
+                        throw new Error(response);
                     return this.send('PROT P', tlsSocket);
                 }).then((response) => {
-                    if (response.startsWith('5')) throw new Error(response);
+                    if (response.startsWith('5'))
+                        throw new Error(response);
                     resolve(tlsSocket);
                 }).catch(reject);
-            })
+            });
         });
     }
-
-    send(command: string): Promise<string>;
-    send(command: string, socket: Duplex): Promise<string>;
-
-    send(command: string, socket?: Duplex): Promise<string> {
+    send(command, socket) {
         const target = socket ? socket : this.socket;
-
         return new Promise((resolve, reject) => {
-
             this.pendingCallbacks.push((error, data) => {
-                if (error) reject(error);
-                if (debug) console.log('[CONTROL]', data);
+                if (error)
+                    reject(error);
+                if (debug)
+                    console.log('[CONTROL]', data);
                 resolve(data);
             });
-
             const message = `${command}${ftpLineEnd}`;
-
-            if (debug) console.log('[SENDING CONTROL]', message);
+            if (debug)
+                console.log('[SENDING CONTROL]', message);
             target.write(message);
         });
     }
-
-    nlist(path?: string) {
+    nlist(path) {
         return new Promise((resolve, reject) => {
-            let files: string[];
-
+            let files;
             this.send(this.handler.message).then((handlerResponse) => {
                 const command = path ? `NLST${ftpSeparator}${path}` : `NLST`;
-                const promises: PromiseLike<string[]>[] = [];
-
+                const promises = [];
                 const sendPromise = this.send(command).then((response) => {
-                    if (response.startsWith('5')) reject(response);
-
+                    if (response.startsWith('5'))
+                        reject(response);
                     this.pendingCallbacks.push((error, value) => {
-                        if (debug) console.log('[CONTROL]', value);
-                        if (error) return reject(error);
-                        if (value.startsWith('5')) reject(value);
-
+                        if (debug)
+                            console.log('[CONTROL]', value);
+                        if (error)
+                            return reject(error);
+                        if (value.startsWith('5'))
+                            reject(value);
                         resolve(files);
                     });
                     return [response];
@@ -177,99 +162,89 @@ export default class FTP {
                 const getDataPromise = this.handler.getData(handlerResponse).then((data) => {
                     return data.split(ftpLineEnd).filter((value) => value ? true : false);
                 });
-
                 promises.push(sendPromise);
                 promises.push(getDataPromise);
-
                 Promise.all(promises).then((values) => {
                     files = values[1];
-                })
-            })
+                });
+            });
         });
     }
-
-    get(remotePath: string) {
+    get(remotePath) {
         return this.send(this.handler.message).then((handlerResponse) => {
             const command = `RETR${ftpSeparator}${remotePath}`;
-
             this.send(command).then((response) => {
-                if (response.startsWith('5')) return socket.emit('error', response);
-
+                if (response.startsWith('5'))
+                    return socket.emit('error', response);
                 this.pendingCallbacks.push((error, value) => {
-                    if (debug) console.log('[CONTROL]', value);
-                    if (error) return socket.emit('error', error);
-                    if (value.startsWith('5')) return socket.emit('error', value);
-
+                    if (debug)
+                        console.log('[CONTROL]', value);
+                    if (error)
+                        return socket.emit('error', error);
+                    if (value.startsWith('5'))
+                        return socket.emit('error', value);
                     socket.emit('getEnd', value);
-                })
-            });
-
-            const socket = this.handler.getSocket(handlerResponse);
-
-            return socket;
-        })
-    }
-
-    put(remotePath: string, stream: Stream) {
-        return new Promise((resolve, reject) => {
-            stream.on('error', reject);
-
-            this.send(this.handler.message).then((handlerResponse) => {
-                const command = `STOR${ftpSeparator}${remotePath}`;
-
-                const sendPromise = this.send(command).then(() => {
-                    this.pendingCallbacks.push((error, value) => {
-                        if (debug) console.log('[CONTROL]', value);
-                        if (error) reject(error);
-                        resolve();
-                    })
                 });
-
-                const socket = this.handler.getSocket(handlerResponse);
-
-                socket.on('error', reject);
-                stream.pipe(socket);
-
-                return sendPromise;
-            })
+            });
+            const socket = this.handler.getSocket(handlerResponse);
+            return socket;
         });
     }
-
-    upload(localPath: string, remotePath: string) {
+    put(remotePath, stream) {
+        return new Promise((resolve, reject) => {
+            stream.on('error', reject);
+            this.send(this.handler.message).then((handlerResponse) => {
+                const command = `STOR${ftpSeparator}${remotePath}`;
+                const sendPromise = this.send(command).then(() => {
+                    this.pendingCallbacks.push((error, value) => {
+                        if (debug)
+                            console.log('[CONTROL]', value);
+                        if (error)
+                            reject(error);
+                        resolve();
+                    });
+                });
+                const socket = this.handler.getSocket(handlerResponse);
+                socket.on('error', reject);
+                stream.pipe(socket);
+                return sendPromise;
+            });
+        });
+    }
+    upload(localPath, remotePath) {
         const readStream = fs.createReadStream(localPath);
         return this.put(remotePath, readStream).then((data) => {
             readStream.close();
             return data;
         });
     }
-
-    download(remotePath: string, localPath: string) {
+    download(remotePath, localPath) {
         return new Promise((resolve, reject) => {
             this.get(remotePath).then((socket) => {
                 const writeStream = fs.createWriteStream(localPath);
-
                 socket.on('error', reject);
-                socket.on('getEnd', (value: string) => {
+                socket.on('getEnd', (value) => {
                     writeStream.close();
                     resolve(value);
                 });
-
                 socket.pipe(writeStream);
             });
         });
     }
-
-    rename(from: string, to: string) {
+    rename(from, to) {
         return this.send(`RNFR${ftpSeparator}${from}`).then((rnfrResponse) => {
-            if (rnfrResponse.startsWith('5')) throw new Error(rnfrResponse);
-            return this.send(`RNTO${ftpSeparator}${to}`)
+            if (rnfrResponse.startsWith('5'))
+                throw new Error(rnfrResponse);
+            return this.send(`RNTO${ftpSeparator}${to}`);
         }).then((rntoResponse) => {
-            if (rntoResponse.startsWith('5')) throw new Error(rntoResponse);
+            if (rntoResponse.startsWith('5'))
+                throw new Error(rntoResponse);
             return rntoResponse;
         });
     }
-
     quit() {
         return this.send('quit');
     }
 }
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = FTP;
