@@ -1,4 +1,3 @@
-/// <reference path="../typings/globals/node/index.d.ts" />
 import { FTPOptions as Options } from './interfaces';
 import { Duplex } from 'stream';
 import Handler from './transferHandlers/handler';
