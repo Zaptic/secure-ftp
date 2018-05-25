@@ -4,7 +4,10 @@
     "target": "ES6",
     "noImplicitAny": true,
     "rootDir": "src",
-    "outDir": "build"
+    "outDir": "build",
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "noErrorTruncation": true
   },
   "compileOnSave": true,
   "formatCodeOptions": {
