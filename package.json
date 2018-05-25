@@ -1,14 +1,16 @@
 {
   "name": "secure-ftp",
-  "version": "0.0.0",
+  "version": "1.1.0",
   "description": "A light FTP, FTPs library without external dependencies written in typescript.",
-  "main": "./dist/lib",
+  "main": "dist/lib.js",
+  "types" : "dist/lib.d.ts",
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Juliand-Digital/secure-ftp.git"
+    "url": "git+https://github.com/Zaptic/secure-ftp.git"
   },
   "keywords": [
     "FTP",
@@ -21,6 +23,7 @@
   },
   "homepage": "https://github.com/Juliand-Digital/secure-ftp#readme",
   "devDependencies": {
-    "typescript": "1.8.10"
+    "@types/node": "^10.1.2",
+    "typescript": "^2.7.2"
   }
 }
