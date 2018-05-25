@@ -1,23 +1,21 @@
-'use strict';
-const tls = require('tls');
-const net = require('net');
-const env = process.env.NODE_ENV;
-const debug = env !== 'production';
-class Handler {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const tls = require("tls");
+const net = require("net");
+const debug = Boolean(process.env.DEBUG);
+// We are logging for debug purposes
+// tslint:disable:no-console
+class TransferHandler {
+    static getUnSecureSocket(options) {
+        return net.createConnection(options);
+    }
     constructor(secure, options) {
         this.secure = secure;
         this.options = options;
     }
-    getSecureSocket(options) {
-        options.rejectUnauthorized = this.options.tls.rejectUnauthorized;
-        return tls.connect(options);
-    }
-    static getUnSecureSocket(options) {
-        return net.createConnection(options);
-    }
     getSocket(message) {
         const options = this.parse(message);
-        const socket = this.secure ? this.getSecureSocket(options) : Handler.getUnSecureSocket(options);
+        const socket = this.secure ? this.getSecureSocket(options) : TransferHandler.getUnSecureSocket(options);
         socket.setEncoding('utf8');
         socket.pause();
         this.socket = socket;
@@ -39,6 +37,9 @@ class Handler {
             socket.resume();
         });
     }
+    getSecureSocket(options) {
+        options.rejectUnauthorized = this.options.tls.rejectUnauthorized;
+        return tls.connect(options);
+    }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = Handler;
+exports.default = TransferHandler;

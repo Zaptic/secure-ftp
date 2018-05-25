@@ -1,7 +1,7 @@
-import { FTPOptions } from '../interfaces';
-import Handler from './handler';
-export default class PASVHandler extends Handler {
-    constructor(secure: boolean, options: FTPOptions);
+import { FTPSOptions } from '../interfaces';
+import TransferHandler from './handler';
+export default class PASVHandler extends TransferHandler {
+    constructor(secure: boolean, options: FTPSOptions);
     protected parse(message: string): {
         host: string;
         port: number;

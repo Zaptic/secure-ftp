@@ -2,8 +2,10 @@
   "name": "secure-ftp",
   "version": "0.0.0",
   "description": "A light FTP, FTPs library without external dependencies written in typescript.",
-  "main": "./dist/lib",
+  "main": "dist/lib.js",
+  "types" : "dist/lib.d.ts",
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
