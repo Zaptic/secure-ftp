@@ -1,11 +1,15 @@
-import { FTPOptions } from '../interfaces';
+/// <reference types="node" />
+import { FTPSOptions } from '../interfaces';
 import { Duplex } from 'stream';
-declare abstract class Handler {
-    private secure;
-    protected options: FTPOptions;
+declare abstract class TransferHandler {
+    private static getUnSecureSocket(options);
     socket: Duplex;
     message: string;
-    constructor(secure: boolean, options: FTPOptions);
+    protected options: FTPSOptions;
+    private readonly secure;
+    protected constructor(secure: boolean, options: FTPSOptions);
+    getSocket(message: string): Duplex;
+    getData(message: string): Promise<string>;
     protected abstract parse(message: string): {
         host: string;
         port: number;
@@ -15,8 +19,5 @@ declare abstract class Handler {
         port: number;
         rejectUnauthorized?: boolean;
     }): Duplex;
-    private static getUnSecureSocket(options);
-    getSocket(message: string): Duplex;
-    getData(message: string): Promise<string>;
 }
-export default Handler;
+export default TransferHandler;
