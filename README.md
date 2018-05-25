@@ -8,11 +8,11 @@ It does not implement every methods from the RFC spec but we are open to adding 
 ## Installation
 This package is available via NPM:
 ```
-yarn add secure-ftp
+yarn add @zaptic-external/secure-ftp
 ```
 or
 ```
-npm install --save secure-ftp
+npm install --save @zaptic-external/secure-ftp
 ```
 
 ## Usage
