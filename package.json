@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Juliand-Digital/secure-ftp.git"
+    "url": "git+https://github.com/Zaptic/secure-ftp.git"
   },
   "keywords": [
     "FTP",
