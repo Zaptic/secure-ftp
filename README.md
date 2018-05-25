@@ -1,7 +1,7 @@
 # secure-ftp
 A light FTP, FTPs library without external dependencies written in typescript.
 
-At Zaptic we use this library for our FTP integrations and it can be considered production ready but is not necessarely bug free. 
+At Zaptic we use this library for our FTP integrations and it can be considered production ready but is not necessarily bug free. 
 It does not implement every methods from the RFC spec but we are open to adding them as the need arises.
 
 
@@ -18,7 +18,7 @@ npm install --save @zaptic-external/secure-ftp
 ## Usage
 
 In typescript (not sure this code compiles by just copy pasting but it should be straight forward):
-```
+```typescript
 import FTPS from 'secure-ftp'
 
 async function main() {
@@ -33,7 +33,7 @@ async function main() {
         }
     }
     
-    // Thisinitialisealize the FTPS object but will not open a connection
+    // This initialisealizes the FTPS object but will not open a connection
     const ftp = new FTPS(options)
 
     
