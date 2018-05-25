@@ -19,7 +19,7 @@ npm install --save @zaptic-external/secure-ftp
 
 In typescript (not sure this code compiles by just copy pasting but it should be straight forward):
 ```typescript
-import FTPS from 'secure-ftp'
+import FTPS from '@zaptic-external/secure-ftp'
 
 async function main() {
     const options = {
