@@ -1,24 +1,22 @@
-'use strict';
+import { FTPSOptions } from '../interfaces'
+import TransferHandler from './handler'
 
-import {FTPOptions} from '../interfaces';
-import Handler from './handler';
+const epsvRegex = /\|([-\d]+)\|/
 
-const epsvRegex = /\|([-\d]+)\|/;
-
-export default class EPSVHandler extends Handler {
-    constructor(secure: boolean, options: FTPOptions) {
-        super(secure, options);
-        this.message = 'EPSV';
+export default class EPSVHandler extends TransferHandler {
+    constructor(secure: boolean, options: FTPSOptions) {
+        super(secure, options)
+        this.message = 'EPSV'
     }
 
     protected parse(message: string) {
-        var parsedNumbers = epsvRegex.exec(message);
+        const parsedNumbers = epsvRegex.exec(message)
 
-        if (!parsedNumbers) throw new Error(`Unable to parse EPSV response. Received: ${message}`);
+        if (!parsedNumbers) throw new Error(`Unable to parse EPSV response. Received: ${message}`)
 
         return {
             host: this.options.host,
-            port: parseInt(parsedNumbers[1])
-        };
+            port: parseInt(parsedNumbers[1], 10)
+        }
     }
 }

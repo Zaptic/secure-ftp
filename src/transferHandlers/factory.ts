@@ -1,11 +1,9 @@
-'use strict';
+import PASVHandler from './pasvHandler'
+import EPSVHandler from './epsvHandler'
+import { FTPSOptions } from '../interfaces'
+import TransferHandler from './handler'
 
-import PASVHandler from './pasvHandler';
-import EPSVHandler from './epsvHandler';
-import {FTPOptions} from '../interfaces';
-import Handler from './handler';
-
-export default function getHandler(type: string, secure: boolean, options: FTPOptions) : Handler {
-    if (type === 'pasv') return new PASVHandler(options.secure, options);
-    else return new EPSVHandler(options.secure, options);
+export default function getHandler(type: string, secure: boolean, options: FTPSOptions): TransferHandler {
+    if (type === 'pasv') return new PASVHandler(secure, options)
+    return new EPSVHandler(options.secure, options)
 }

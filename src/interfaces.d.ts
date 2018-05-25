@@ -1,11 +1,7 @@
-export interface Callback<T> {
-    (error: Error, data?: T): void;
-}
-
-export interface FTPOptions {
+export interface FTPSOptions {
     host: string
     port: number
-    user: string
+    username: string
     password: string
     secure: boolean
     handler?: 'pasv' | 'epsv'
