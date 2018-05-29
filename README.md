@@ -62,7 +62,7 @@ async function main() {
         // Do some error handling
     } finally {
         // This will close the connection. Make sure you always call that
-        await this.ftp.quit()
+        await ftp.quit()
     }
 }
 ```
